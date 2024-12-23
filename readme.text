@@ -1,0 +1,39 @@
+
+#############    Environment Setup    ##################
+
+    1.Create a Virtual Environment:
+    python3 -m venv carEnv
+
+    2.Activate the Environment:
+    source carEnv/bin/activate
+
+    3.Install Dependencies:
+    pip install scikit-learn
+    pip install torch torchvision pandas pillow scikit-learn reportlab matplotlib
+
+
+######### Testing Instructions ########
+
+    1. open confi.py file
+    2. modify with actual paths:
+        a) TEST_FOLDER
+        b) OUTPUT_CSV_PATH
+    3. run test_predict.py with command "python test_predict.py"
+    4. output will save in given filepath in 2.b) step
+
+#########  Training the model  #######
+    1. open confi.py file
+    2. modify with actual paths:
+        a) DATASET_PATH
+    3.Option steps: hypertuning paramanrer upfdate
+        a) EPOCHS
+        b) LR
+    4. run train_model.py with command "python train_model.py"
+        a) review dataset preparation report pdf files  in report folder
+        b) review F1 score, recall and recall metrics for training set, eval set, whole dataset
+        b) If model is working best then, copy the latest model path in model folder and update the in config.py MODEL_PATH
+
+########   Eval dataset for overal F1 score  #######
+    1. It will take this DATASET_PATH from config.py
+    2. run tje eval_dataset.py with the command "python eval_dataset.py"
+    3. review F1 score and debugLowF1Score**** pdf files in report folder
