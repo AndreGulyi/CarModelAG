@@ -111,6 +111,8 @@ def create_position_based_model(num_parts, height, width, num_part_types, num_ca
 
 
 # Dataset preparation
+data = process_via_dataset(DATASET_PATH, is_poly=True, is_no_direction=True)
+
 num_parts = 20
 height, width = 640, 640
 num_part_types = len(MAJOR_PARTS_NO_DIRECTION)
