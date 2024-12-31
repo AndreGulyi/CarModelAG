@@ -136,7 +136,7 @@ if __name__ == "__main__":
     model.fit(
         [train_masks, train_positions, train_labels],
         train_categories,
-        epochs=10,
+        epochs=1,
         batch_size=4
     )
-    model.save('model/car_parts_model.h5')
+    model.save("model/car_parts_model.keras")
