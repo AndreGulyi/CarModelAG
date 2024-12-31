@@ -12,7 +12,6 @@ from tensorflow.keras.mixed_precision import Policy, set_global_policy
 policy = Policy('mixed_float16')
 set_global_policy(policy)
 # Process dataset
-data = process_via_dataset(DATASET_PATH, is_poly=True, is_no_direction=True)
 
 
 # Pad sequence to a consistent size
@@ -80,6 +79,8 @@ class CarPartsDataset(Dataset):
 
 # Model creation
 def create_position_based_model(num_parts, height, width, num_part_types, num_categories):
+    data = process_via_dataset(DATASET_PATH, is_poly=True, is_no_direction=True)
+
     part_mask_input = layers.Input(shape=(num_parts, height, width, 1), name="part_masks")
     resized_masks = layers.TimeDistributed(layers.Resizing(256, 256))(part_mask_input)
 
@@ -114,26 +115,26 @@ num_parts = 20
 height, width = 640, 640
 num_part_types = len(MAJOR_PARTS_NO_DIRECTION)
 num_categories = len(CATEGORY_MAPP)
+if __name__ == "__main__":
+    dataset = CarPartsDataset(data, image_shape=(640, 640))
+    train_masks, train_positions, train_labels, train_categories = zip(
+        *[dataset[i] for i in range(len(dataset))]
+    )
 
-dataset = CarPartsDataset(data, image_shape=(640, 640))
-train_masks, train_positions, train_labels, train_categories = zip(
-    *[dataset[i] for i in range(len(dataset))]
-)
+    train_masks = np.array(train_masks)
+    train_positions = np.array(train_positions)
+    train_labels = np.array(train_labels)
+    train_categories = to_categorical(train_categories, num_categories)
 
-train_masks = np.array(train_masks)
-train_positions = np.array(train_positions)
-train_labels = np.array(train_labels)
-train_categories = to_categorical(train_categories, num_categories)
+    # Model initialization
+    model = create_position_based_model(num_parts, height, width, num_part_types, num_categories)
+    model.summary()
 
-# Model initialization
-model = create_position_based_model(num_parts, height, width, num_part_types, num_categories)
-model.summary()
-
-# Training
-model.fit(
-    [train_masks, train_positions, train_labels],
-    train_categories,
-    epochs=10,
-    batch_size=4
-)
-model.save('model/car_parts_model.h5')
+    # Training
+    model.fit(
+        [train_masks, train_positions, train_labels],
+        train_categories,
+        epochs=10,
+        batch_size=4
+    )
+    model.save('model/car_parts_model.h5')
