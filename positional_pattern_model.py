@@ -33,7 +33,11 @@ def polygon_to_mask(image_shape, polygons):
 
 # Calculate centroid of a polygon
 def calculate_centroid(polygon):
+    if not isinstance(polygon, (list, np.ndarray)) or len(polygon) == 0:
+        raise ValueError("Invalid polygon data.")
     polygon = np.array(polygon)
+    if len(polygon.shape) != 2 or polygon.shape[1] != 2:
+        raise ValueError("Polygon must be a 2D array of (x, y) coordinates.")
     x_coords = polygon[:, 0]
     y_coords = polygon[:, 1]
     return np.mean(x_coords), np.mean(y_coords)
@@ -47,8 +51,16 @@ def pad_positions(positions, max_parts, pad_value=0):
 
 # Pad labels to a consistent size
 def pad_labels(labels, max_parts, num_part_types, pad_value=0):
-    padding_length = max_parts - len(labels)
-    return np.pad(labels, ((0, padding_length), (0, 0)), mode='constant', constant_values=pad_value)
+    # Ensure labels are 2D
+    if not isinstance(labels, list ):
+        if len(labels.shape) == 1:
+            labels = labels.reshape(-1, 1)
+        padding_length = max_parts - labels.shape[0]
+    else:
+        padding_length = max_parts - len(labels)
+    if padding_length > 0:
+        return np.pad(labels, ((0, padding_length), (0, 0)), mode='constant', constant_values=pad_value)
+    return labels[:max_parts]
 
 
 # Dataset class
@@ -80,7 +92,6 @@ class CarPartsDataset(Dataset):
 # Model creation
 def create_position_based_model(num_parts, height, width, num_part_types, num_categories):
     data = process_via_dataset(DATASET_PATH, is_poly=True, is_no_direction=True)
-
     part_mask_input = layers.Input(shape=(num_parts, height, width, 1), name="part_masks")
     resized_masks = layers.TimeDistributed(layers.Resizing(256, 256))(part_mask_input)
 
@@ -131,7 +142,8 @@ if __name__ == "__main__":
     # Model initialization
     model = create_position_based_model(num_parts, height, width, num_part_types, num_categories)
     model.summary()
-
+    print(f"Training mask Shape: {train_masks.shape}, Position Shape:{train_positions.shape}, Labels Shape: {train_labels.shape}")
+    raise Exception("invalid ")
     # Training
     model.fit(
         [train_masks, train_positions, train_labels],

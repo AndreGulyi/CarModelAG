@@ -3,26 +3,29 @@ import numpy as np
 import cv2
 from tensorflow.keras.models import load_model
 
+from config import MAJOR_PARTS_NO_DIRECTION
 from positional_pattern_model import calculate_centroid, pad_sequence, pad_labels, pad_positions
 from prepare_dataframe import process_via_dataset
 from tensorflow.keras.utils import to_categorical
 from keras.utils import custom_object_scope
 import tensorflow as tf
 from ultralytics import YOLO
-
+image_shape = (640, 640)
 # Load the YOLO model
-yolo_model = YOLO("/Users/yarramsettinaresh/PycharmProjects/CarModel/yolo_model/carparts_poly3/weights/best.pt")
+yolo_model = YOLO("/Users/yarramsettinaresh/PycharmProjects/CarModel/yolo_model/carparts_poly3/weights/best.pt", )
 
 # Load the classification model
 # custom_objects = {"Cast":  tf.cast}
 
 model = load_model("/Users/yarramsettinaresh/PycharmProjects/CarModel/model/car_parts_model.keras")
+print(model.summary())
 
 # Example input image for YOLO detection
 image = cv2.imread("/Users/yarramsettinaresh/PycharmProjects/CarModel/_car_parts_poly_region_dataset/images/train/0EETD2gUOZ_1648015344105.jpg")
-
+input_size = 640  # Typically 640x640
+resized_image = cv2.resize(image, (input_size, input_size))
 # Run YOLO prediction
-yolo_results = yolo_model.predict(image)
+yolo_results = yolo_model.predict(resized_image)
 
 # Convert Masks object to NumPy arrays
 masks_data = yolo_results[0].masks.data.cpu().numpy()  # Access and convert to NumPy array
@@ -52,13 +55,22 @@ for mask in masks_data:  # Iterate through NumPy masks
     for polygon in polygons:
         positions.append(calculate_centroid(polygon))
 
+max_parts = 20
+num_part_types = len(MAJOR_PARTS_NO_DIRECTION)
 # Process the YOLO results (you may need to pad or resize masks, positions, and labels)
-input_masks = np.array([pad_sequence(masks_data, max_parts=20, height=640, width=640)])
-input_positions = np.array([pad_positions(positions, max_parts=20)])
-input_labels = np.array([pad_labels(yolo_results.names, max_parts=20, num_part_types=5)])
+# input_masks = np.array([pad_sequence(masks_data, max_parts=20, height=640, width=640)])
+# input_positions = np.array([pad_positions(positions, max_parts=20)])
+# input_labels = np.array([pad_labels(yolo_results[0].boxes.numpy().cls.astype(int), max_parts=20, num_part_types=5)])
+#
+masks = pad_sequence([masks_data], 20, image_shape[0], image_shape[1])
 
+# positions = [calculate_centroid(polygon) for polygon in polygons]
+positions = pad_positions([np.array(positions)], max_parts)
+
+one_hot_labels = [np.eye(num_part_types)[label] for label in yolo_results[0].boxes.numpy().cls.astype(int)]
+one_hot_labels = pad_labels(one_hot_labels, max_parts, num_part_types)
 # Predict the category using the position-based classification model
-predictions = model.predict([input_masks, input_positions, input_labels])
+predictions = model.predict([masks, positions, one_hot_labels])
 
 # Output the predicted category
 predicted_category = np.argmax(predictions, axis=-1)
