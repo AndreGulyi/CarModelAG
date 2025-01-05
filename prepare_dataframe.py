@@ -43,8 +43,8 @@ def process_via_dataset(base_path, is_poly=None, is_debug=False, is_no_direction
     df = []
 
     # Automatically detect all subfolders (groups) in the base path
-    groups = ["610910057eb77b4a469ebb37"]
-    # groups = [f for f in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, f))]
+    # groups = ["610910057eb77b4a469ebb37"]
+    groups = [f for f in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, f))]
 
     valid_images = 0
     invalid_images = 0

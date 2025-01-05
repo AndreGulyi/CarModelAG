@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 from carmodel import invalid_combinations, category_map
 
 
-def create_pdf_with_images(images, output_pdf, rows=5, cols=2, cell_width=200, cell_height=150, title=""):
+def create_pdf_with_images(images, output_pdf, rows=5, cols=2, cell_width=200, cell_height=150, title="", summery=None):
     page_width, page_height = letter
     pdf = canvas.Canvas(output_pdf, pagesize=letter)
     x_margin = 20
@@ -114,9 +114,20 @@ def create_pdf_with_images(images, output_pdf, rows=5, cols=2, cell_width=200, c
 
         # Start a new page after filling one page of images
         pdf.showPage()
+    if summery:
+        max_chunk_size = 200
+        # Split the summary text into chunks
+        chunks = [summery[i:i + max_chunk_size] for i in range(0, len(summery), max_chunk_size)]
+        start_y = page_height - 120  # Adjust Y position for summary
 
+        # Add each chunk of text to the PDF
+        for chunk in chunks:
+            pdf.setFont("Helvetica", 10)
+            pdf.drawString(x_margin, start_y, chunk)
+            start_y -= 15  # Adjust spacing between chunks
     # Save the PDF file
     pdf.save()
+    print(f"pdf created: {output_pdf}")
 def show_images_in_grid(images, rows=5, cols=10):
     fig, axes = plt.subplots(rows, cols, figsize=(20, 10))
     axes = axes.flatten()
