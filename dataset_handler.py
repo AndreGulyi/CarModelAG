@@ -13,23 +13,17 @@ from reportlab.lib.utils import ImageReader
 from reportlab.lib import colors
 
 import pandas as pd
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch._higher_order_ops.flex_attention import trace_flex_attention_backward
-from torch.utils.data import Dataset, DataLoader
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import f1_score, classification_report
-from torchvision import transforms
 from PIL import Image
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 import matplotlib.pyplot as plt
-
-from carmodel import invalid_combinations, category_map
-
+category_map = {}
+invalid_combinations = [
+    {'rear', 'front'},  # Rear and front shouldn't appear together
+    {'rearleft', 'rearight'},  # Rear left and right shouldn't appear together
+    {'fronleft', 'frontright'},  # Front left and right shouldn't appear together
+]
 from pathlib import Path
 
 def create_pdf_with_images(images, output_pdf, rows=5, cols=1, cell_width=200, cell_height=150, title="", summery=None,l=None):
@@ -168,82 +162,3 @@ def find_closest_category(parts):
             closest_category = category
 
     return closest_category
-def prepare_dataset(dataset_path):
-    """
-    Prepares the dataset by processing the annotations and creating a DataFrame
-    containing image paths and their corresponding labels.
-    """
-    multi_category_images = []
-    empty_category_images = []
-    data = []
-    # groups = ["6125c98e7eb77b4a469ef416"]  # Example, use all groups in your real dataset
-    groups = [d for d in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, d))]
-    for group in groups:
-        group_path = os.path.join(dataset_path, group)
-        region_file = os.path.join(group_path, "via_region_data.json")
-
-        # Load and process via_region_data.json
-        if not os.path.exists(region_file):
-            continue
-
-        with open(region_file, "r") as f:
-            regions_data = json.load(f)
-
-        for k, v in regions_data.items():
-            image_path = os.path.join(group_path, v["filename"])
-            if not os.path.exists(image_path):
-                continue
-
-            categories = set()
-            parts = []
-            if not v["regions"]:
-                continue
-            for r in v["regions"]:
-                identity = r["region_attributes"].get("identity", "")
-                parts.append(identity)
-
-            for category, keywords in category_map.items():
-                if all(keyword in parts for keyword in keywords):
-                    categories.add(category)
-            # Assign all categories if multiple, else skip if uncategorized
-            if categories:
-                for combination in invalid_combinations:
-                    if combination.issubset(categories):
-                        logging.debug(f"Invalid labeling found: Categories: {', '.join(categories)} in image {image_path}")
-                        continue
-                if "front" in "".join(categories) and "rear" in "".join(categories):
-                    logging.debug(f"Invalid data labling found front&rear in same image {image_path}: {''.join(categories)}")
-                    continue
-                data.append({"filename": image_path, "labels": list(categories)})
-
-
-                if len(categories)>1:
-                    multi_category_images.append({"filename": image_path, "labels": missing_parts,
-                                                  "category": ", ".join(categories)})
-                    logging.debug("multi cateogry: ",categories, image_path)
-
-            else:
-                # if False:
-                # Image.open(image_path).show()
-                logging.debug("empty category ",image_path, parts)
-                if not categories: # Empty categories
-                    closed_category = find_closest_category(parts)
-                    if closed_category:
-                        missing_parts = [pp for pp in category_map[closed_category] if pp not in parts]
-                    else:
-                        missing_parts = []
-                    empty_category_images.append({"filename": image_path, "labels": missing_parts,
-                                                  "category": closed_category})
-
-    # Convert to DataFrame
-    df = pd.DataFrame(data)
-    # if empty_category_images:
-    #     show_images_in_grid(empty_category_images, rows=5, cols=10)
-    output_pdf_path = "reports/empty_category_images.pdf"
-    if empty_category_images:
-        create_pdf_with_images(empty_category_images, output_pdf_path)
-        logging.debug(f"PDF created with empty category images: {output_pdf_path}")
-    if multi_category_images:
-        create_pdf_with_images(multi_category_images, "reports/multi_category_images.pdf", rows=5, cols=2)
-
-    return df
