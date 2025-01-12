@@ -1,4 +1,5 @@
 # Created by yarramsettinaresh GORAKA DIGITAL PRIVATE LIMITED at 23/12/24
+import logging
 import os
 import pandas as pd
 import json
@@ -29,8 +30,11 @@ import matplotlib.pyplot as plt
 
 from carmodel import invalid_combinations, category_map
 
+from pathlib import Path
 
-def create_pdf_with_images(images, output_pdf, rows=5, cols=2, cell_width=200, cell_height=150, title="", summery=None):
+def create_pdf_with_images(images, output_pdf, rows=5, cols=1, cell_width=200, cell_height=150, title="", summery=None,l=None):
+    file_path = Path(output_pdf)
+    file_path.parent.mkdir(parents=True, exist_ok=True)
     page_width, page_height = letter
     pdf = canvas.Canvas(output_pdf, pagesize=letter)
     x_margin = 20
@@ -84,7 +88,7 @@ def create_pdf_with_images(images, output_pdf, rows=5, cols=2, cell_width=200, c
             try:
                 # Add the image
                 img = Image.open(image_path)
-                img.thumbnail((int(cell_width), int(cell_height)))
+                # img.thumbnail((int(cell_width), int(cell_height)))
                 buffer = BytesIO()
                 img.save(buffer, format="JPEG")
                 buffer.seek(0)
@@ -106,7 +110,7 @@ def create_pdf_with_images(images, output_pdf, rows=5, cols=2, cell_width=200, c
                 pdf.drawString(text_x, text_y - 10, f"Labels: {labels}")
                 pdf.drawString(text_x, text_y - 20, f"Category: {category}")
             except Exception as e:
-                print(f"Error loading image {image_path}: {e}")
+                logging.debug(f"Error loading image {image_path}: {e}")
 
         # Add page number (bottom right)
         pdf.setFont("Helvetica", 8)
@@ -127,7 +131,7 @@ def create_pdf_with_images(images, output_pdf, rows=5, cols=2, cell_width=200, c
             start_y -= 15  # Adjust spacing between chunks
     # Save the PDF file
     pdf.save()
-    print(f"pdf created: {output_pdf}")
+    logging.debug(f"pdf created: {output_pdf}")
 def show_images_in_grid(images, rows=5, cols=10):
     fig, axes = plt.subplots(rows, cols, figsize=(20, 10))
     axes = axes.flatten()
@@ -143,7 +147,7 @@ def show_images_in_grid(images, rows=5, cols=10):
             ax.axis('off')
         except Exception as e:
             ax.set_visible(False)
-            print(f"Error loading image {image_path}: {e}")
+            logging.debug(f"Error loading image {image_path}: {e}")
 
     # Hide any remaining empty subplots
     for ax in axes[len(images):]:
@@ -205,10 +209,10 @@ def prepare_dataset(dataset_path):
             if categories:
                 for combination in invalid_combinations:
                     if combination.issubset(categories):
-                        print(f"Invalid labeling found: Categories: {', '.join(categories)} in image {image_path}")
+                        logging.debug(f"Invalid labeling found: Categories: {', '.join(categories)} in image {image_path}")
                         continue
                 if "front" in "".join(categories) and "rear" in "".join(categories):
-                    print(f"Invalid data labling found front&rear in same image {image_path}: {''.join(categories)}")
+                    logging.debug(f"Invalid data labling found front&rear in same image {image_path}: {''.join(categories)}")
                     continue
                 data.append({"filename": image_path, "labels": list(categories)})
 
@@ -216,12 +220,12 @@ def prepare_dataset(dataset_path):
                 if len(categories)>1:
                     multi_category_images.append({"filename": image_path, "labels": missing_parts,
                                                   "category": ", ".join(categories)})
-                    print("multi cateogry: ",categories, image_path)
+                    logging.debug("multi cateogry: ",categories, image_path)
 
             else:
                 # if False:
                 # Image.open(image_path).show()
-                print("empty category ",image_path, parts)
+                logging.debug("empty category ",image_path, parts)
                 if not categories: # Empty categories
                     closed_category = find_closest_category(parts)
                     if closed_category:
@@ -238,7 +242,7 @@ def prepare_dataset(dataset_path):
     output_pdf_path = "reports/empty_category_images.pdf"
     if empty_category_images:
         create_pdf_with_images(empty_category_images, output_pdf_path)
-        print(f"PDF created with empty category images: {output_pdf_path}")
+        logging.debug(f"PDF created with empty category images: {output_pdf_path}")
     if multi_category_images:
         create_pdf_with_images(multi_category_images, "reports/multi_category_images.pdf", rows=5, cols=2)
 

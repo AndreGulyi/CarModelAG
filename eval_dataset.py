@@ -1,62 +1,98 @@
-# Created by yarramsettinaresh GORAKA DIGITAL PRIVATE LIMITED at 23/12/24
-import datetime
-import sys
+from config import DATASET_PATH, CATEGORY_MAPP, CLASSY_MODEL_CLASS_NAME
+from multi_model_inference import MultiModelTflightInference
+from prepare_dataframe import process_via_dataset
+from sklearn.metrics import f1_score, precision_recall_fscore_support
+from tabulate import tabulate
 
-from sklearn.metrics import f1_score, classification_report
-from carmodel import CarModel, encode_labels, all_categories, decode_labels
-from config import DATASET_PATH
-from dataset_handler import prepare_dataset, create_pdf_with_images
-import logging
-logging.basicConfig(
-    filename=f"log/eval/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log",
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logging.StreamHandler(sys.stdout)
-logging.debug("Test message")
-log_name = f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+def main():
+    # Initialize models and process dataset
+    multi_model = MultiModelTflightInference()
+    df = process_via_dataset(DATASET_PATH, is_poly=True, is_no_direction=True)
 
-dataset_path = DATASET_PATH
-df = prepare_dataset(dataset_path)
-car_model = CarModel()
-file_names = []
-all_preds, all_true_labels = [], []
-count = 0
-empty = 0
-for file_name,labels in zip(df["filename"], df["labels"]):
-    r = car_model.predict(file_name, is_decoded=False)
+    failed_count = 0
+    error = []
+    y_true = []
+    y_pred = []
 
-    if any(r):
-        # print(r)
-        count +=1
-        all_true_labels.append(encode_labels(labels))
-        all_preds.append(list(r))
-        file_names.append(file_name)
-        pass
-    else:
-        # print("Empty")
-        empty += 1
-print(f"predicted: {count}/{count+empty}, empty: {empty}")
-y_true_binary =all_true_labels
-y_pred_binary = all_preds
-f1 = f1_score(y_true_binary, y_pred_binary, average='micro')
-print(f"\tF1 Score (Micro): {f1:.4f}")
-print("\tClassification Report:")
-print("\t", classification_report(y_true_binary, y_pred_binary, target_names=all_categories))
-report =sorted(classification_report(y_true_binary, y_pred_binary, target_names=all_categories, output_dict=True).items(),
-               key=lambda x: x[1]['f1-score'], reverse=True)
-report = [r for r in report if r[0] in all_categories]
+    for img_path, poly, true_parts, true_category in df:
+        try:
+            parts_img, parts = multi_model._pred_carts_seg_model(img_path)
+            if parts is None:
+                error.append(img_path)
+                continue
 
-for r, info in report[:2]:
-    low_score_images = []
-    for image_path, true_label, pred_lable in zip(file_names, all_true_labels, all_preds):
-        true_label = decode_labels(true_label)
-        pred_lable = decode_labels(pred_lable)
-        if not set(true_label) == set(pred_lable):
-            low_score_images.append({"filename": image_path, "labels": true_label,
-                                      "category": pred_lable})
-    if low_score_images:
-        pdf_name = f"reports/DebugLowF1Score_{r}__{info['f1-score']:.2f}.pdf"
-        create_pdf_with_images(low_score_images, pdf_name, title=f"{r} low F1 score({info['f1-score']:.2f}) debug ")
-        print(f"PDF report creadted :{pdf_name}")
+            missing_parts = set(true_parts).difference(set(parts))
+            if missing_parts:
+                print(f"Missing parts: {missing_parts}, Image: {img_path}")
 
+            true_category = CATEGORY_MAPP[true_category]
+            predicted_category = multi_model._pred_classy_mode(parts_img)
+
+            if predicted_category is not None:
+                y_true.append(true_category)
+                y_pred.append(predicted_category)
+                if predicted_category != true_category:
+                    print(f"Mismatch: Predicted: {predicted_category}, Actual: {true_category}")
+                    failed_count += 1
+            else:
+                y_true.append(true_category)
+                y_pred.append("Unknown")
+                failed_count += 1
+        except Exception as e:
+            print(f"Error processing {img_path}: {e}")
+            error.append(img_path)
+
+    # Metrics calculation
+    calculate_metrics(y_true, y_pred, failed_count, len(df), error)
+
+def calculate_metrics(y_true, y_pred, failed_count, total_count, error):
+    try:
+        weighted_f1_score = f1_score(y_true, y_pred, average='weighted')
+    except ValueError as e:
+        print(f"Error calculating F1 score: {e}")
+        weighted_f1_score = None
+
+    print(f"\nError count: {len(error)}, Errors: {error}")
+    print(f"Success: {total_count - failed_count}, Failed: {failed_count}, Total: {total_count}")
+
+    if weighted_f1_score is not None:
+        print(f"Weighted F1 Score: {weighted_f1_score:.2f}")
+
+    labels = list(CLASSY_MODEL_CLASS_NAME.values())
+    precision, recall, f1_scores, support = precision_recall_fscore_support(
+        y_true, y_pred, labels=labels, zero_division=0
+    )
+
+    index_to_char = {v: k for k, v in CLASSY_MODEL_CLASS_NAME.items()}
+    classwise_metrics = {
+        index_to_char[label]: {
+            "Precision": precision[idx],
+            "Recall": recall[idx],
+            "F1 Score": f1_scores[idx],
+        }
+        for idx, label in enumerate(labels)
+    }
+
+    display_metrics(classwise_metrics, total_count, failed_count)
+
+def display_metrics(classwise_metrics, total_count, failed_count):
+    sorted_metrics = sorted(
+        classwise_metrics.items(), key=lambda x: x[1]['F1 Score'], reverse=True
+    )
+
+    table_data = [
+        [CLASSY_MODEL_CLASS_NAME[char], metrics['F1 Score'], metrics['Precision'], metrics['Recall']]
+        for char, metrics in sorted_metrics
+    ]
+
+    headers = ["Character", "F1 Score", "Precision", "Recall"]
+
+    accuracy = ((total_count - failed_count) / total_count) * 100 if total_count > 0 else 0
+
+    print("\nMetrics sorted by F1 Score:")
+    print(tabulate(table_data, headers=headers, floatfmt=".2f"))
+    print(f"\nSuccess: {total_count - failed_count}, Failed: {failed_count}, Total testing: {total_count}")
+    print(f"Accuracy: {accuracy:.2f}%")
+
+if __name__ == "__main__":
+    main()

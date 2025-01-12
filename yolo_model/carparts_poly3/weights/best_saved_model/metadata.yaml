@@ -1,0 +1,32 @@
+description: Ultralytics YOLO11n-seg model trained on /Users/yarramsettinaresh/PycharmProjects/CarModel/_car_parts_poly_region_dataset//data.yaml
+author: Ultralytics
+date: '2025-01-04T17:03:58.200384'
+version: 8.3.54
+license: AGPL-3.0 License (https://ultralytics.com/license)
+docs: https://docs.ultralytics.com
+stride: 32
+task: segment
+batch: 1
+imgsz:
+- 640
+- 640
+names:
+  0: frontbumpergrille
+  1: roofside
+  2: headlamp
+  3: apillar
+  4: foglamp
+  5: runningboard
+  6: bonnet
+  7: rearws
+  8: bpillar
+  9: frontbumper
+  10: frontws
+  11: tailgate
+  12: rearbumpercladding
+  13: frontdoor
+  14: tyre
+  15: reardoor
+  16: fender
+  17: taillamp
+  18: rearbumper

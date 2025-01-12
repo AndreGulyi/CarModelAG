@@ -3,15 +3,13 @@ import datetime
 import logging
 
 import tensorflow as tf
+from onnxconverter_common import FloatTensorType
 
 from config import MAJOR_PARTS_NO_DIRECTION, CATEGORY_MAPP, DATASET_PATH
 from xgboost_model_utils import prepare_features_and_labels, CarPartsDataset
 from prepare_dataframe import process_via_dataset
-import torch
-from torch.utils.data import Dataset
 import numpy as np
-import random
-import math
+
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
@@ -103,10 +101,24 @@ model_filename = 'model/car_parts_xgboost_model.json'
 bst.save_model(model_filename)
 logging.debug(f"Model saved to {model_filename}")
 
+# For example, take the first sample from the training dataset (adjust to fit your actual dataset)
+sample = train_dataset[0][0]  # Assuming dataset returns a tuple (features, labels)
+print("Shape of a single training sample:", sample.shape)
+
+# Print the length of the features (number of features used for training)
+print("Number of features used for training:", sample.shape[0])  # Number of features per sample
+
+# Now create the dummy input for ONNX conversion using the correct number of features
+dummy_input = np.random.rand(1, sample.shape[0])  # 1 sample with the same number of features as the training data
+print("Dummy input shape for ONNX conversion:", dummy_input.shape)
+
+# Define the initial types based on the dummy input shape
+input_type = [("input", FloatTensorType([None, dummy_input.shape[1]]))]  # None for batch size
+print("Initial types for ONNX:", input_type)
 # Convert to TensorFlow Lite
-# converter = tf.lite.TFLiteConverter.from_keras_model(bst)
-# tflite_model = converter.convert()
-#
-# # Save the TFLite model
-# with open(f'model/car_parts_xgboost_model_{int(f1*100)}F1.tflite', 'wb') as f:
-#     f.write(tflite_model)
+converter = tf.lite.TFLiteConverter.from_keras_model(bst)
+tflite_model = converter.convert()
+
+# Save the TFLite model
+with open(f'model/car_parts_xgboost_model_{int(f1*100)}F1.tflite', 'wb') as f:
+    f.write(tflite_model)

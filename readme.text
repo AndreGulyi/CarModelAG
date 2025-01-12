@@ -1,4 +1,6 @@
 
+
+
 #############    Environment Setup    ##################
 
     1.Create a Virtual Environment:
@@ -8,13 +10,12 @@
     source carEnv/bin/activate
 
     3.Install Dependencies:
-    pip install scikit-learn
-    pip install torch torchvision pandas pillow scikit-learn reportlab matplotlib
+    pip install ultralytics torch torchvision pandas pillow scikit-learn reportlab matplotlib tabulate
 
 
 ######### Testing Instructions ########
 
-    1. open confi.py file
+    1. open conf.yaml file
     2. modify with actual paths:
         a) TEST_FOLDER
         b) OUTPUT_CSV_PATH
@@ -22,18 +23,37 @@
     4. output will save in given filepath in 2.b) step
 
 #########  Training the model  #######
-    1. open confi.py file
+    1. open conf.yaml file
     2. modify with actual paths:
         a) DATASET_PATH
-    3.Option steps: hypertuning paramanrer upfdate
-        a) EPOCHS
-        b) LR
-    4. run train_model.py with command "python train_model.py"
-        a) review dataset preparation report pdf files  in report folder
-        b) review F1 score, recall and recall metrics for training set, eval set, whole dataset
-        b) If model is working best then, copy the latest model path in model folder and update the in config.py MODEL_PATH
+
+    ##### Train CAR_PARTS_SEG_MODEL
+
+    3. hypertuning paramanrer
+        a) CAR_PARTS_SEG_MODEL_TRAINING_EPOCHS
+        b) CAR_PARTS_SEG_MODEL_BATCH
+    4*. run train_cart_parts_seg_yolo_model.py with command "python train_cart_parts_seg_yolo_model.py"
+        a) this will remove left and right differences(leftHeadLamp --> headlLamp) with passing is_no_direction=True param and create create new yolo dataset  "_car_parts_poly_dataset_"
+        b) train the yolo model
+        c) export tflight model in  yolo_model/carparts_poly<latest_version_no>/weights/best_saved_model/best_float16.tflite  or  best_float32.tflite
+    5*. copy tflight model path best_float16.tflite or best_float32.tflite
+    6*. open conf.yaml file and modify with path CAR_PARTS_SEG_TF_LIGHT_MODEL_PATH
+
+    ###  Train CLASSIFY_MODE ######
+    7. open carparts_vs_category_graph_config.yaml review CATEGORY_RULES for how category is set in given dataset based on major parts
+    8. in given dataset many images not been labeled properly i.e missed labeling major parts, so it not mapped to any category, those are consider a invalid data
+    9. option steps: hypertuning paramanrer
+        a) CLASSIFY_MODEL_EPOCHS
+        b) CLASSIFY_MODEL_BATCH
+    10*. run train_calssify_yolo_model.py.py with command "python train_calssify_yolo_model.py.py"
+        a) preparing dataset : it will crop and generate combined image of major parts. and labeled as category based on CATEGORY_RULES. output dataset path "_car_parts_crop_dataset"
+        b) train the yolo model
+        c) export tflight model in  yolo_model/CLASSIFY_MODEL<latest_version_no>/weights/best_saved_model/best_float16.tflite  or  best_float32.tflite
+    11*. copy tflight model path best_float16.tflite or best_float32.tflite
+    12. open conf.yaml file and modify with path CLASSIFY_MODE_PATH
+
 
 ########   Eval dataset for overal F1 score  #######
     1. It will take this DATASET_PATH from config.py
-    2. run tje eval_dataset.py with the command "python eval_dataset.py"
-    3. review F1 score and debugLowF1Score**** pdf files in report folder
+    2. run the eval_dataset.py with the command "python eval_dataset.py"
+    3. review  the F1 score

@@ -8,9 +8,12 @@ import cv2
 import random
 import numpy as np
 import yaml
+from ultralytics import YOLO
+
 from config import DATASET_PATH, CAR_PARTS_NAMES, cart_parts_region_dataset_path, is_poly, \
-    MAJOR_PARTS_NO_DIRECTION_IDX_MAP, MAJOR_PARTS_NO_DIRECTION, CATEGORY_MAPP
+    MAJOR_PARTS_NO_DIRECTION_IDX_MAP, MAJOR_PARTS_NO_DIRECTION, CATEGORY_MAPP, CLASSY_MODEL_CLASS_NAME
 from dataset_utils import CATEGORY_PARTS_RULE_HANDLER
+# yolo_clasify = YOLO("/Users/yarramsettinaresh/PycharmProjects/cameraApp/runs/classify/train2/weights/best.pt")
 
 CLASS_MAPPING = dict(zip(CAR_PARTS_NAMES.values(), CAR_PARTS_NAMES.keys()))
 
@@ -20,13 +23,23 @@ def get_part_label(part_label, is_no_direction=None):
     return CLASS_MAPPING[part_label]
 
 def create_data_yaml(output_path, is_no_direction=None, is_classy=None):
-    data = {
-        "train": "images/train",
-        "val": "images/val",
-        "test": "images/test",
-        "nc": len(MAJOR_PARTS_NO_DIRECTION) if is_no_direction else len(CAR_PARTS_NAMES),
-        "names": MAJOR_PARTS_NO_DIRECTION if is_no_direction else CAR_PARTS_NAMES
-    }
+    if is_classy:
+        data = {
+            "train": "train",
+            "val": "val",
+            "test": "test",
+            "nc": len(CLASSY_MODEL_CLASS_NAME),
+            "names": CLASSY_MODEL_CLASS_NAME
+        }
+    else:
+        data = {
+            "train": "images/train",
+            "val": "images/val",
+            "test": "images/test",
+            "nc": len(MAJOR_PARTS_NO_DIRECTION) if is_no_direction else len(CAR_PARTS_NAMES),
+            "names": MAJOR_PARTS_NO_DIRECTION if is_no_direction else CAR_PARTS_NAMES
+        }
+
     yaml_output_path = os.path.join(output_path, "data.yaml")
 
     if os.path.exists(yaml_output_path):
@@ -157,8 +170,8 @@ def process_via_dataset(base_path, output_path, train_ratio=0.7, val_ratio=0.15,
     total_images = 0
 
     group_all_image_paths = defaultdict(list)
-    if not  is_classy:
-        category_label_file = open(os.path.join(output_path, "category_label_file.txt"),mode='w')
+    # if not  is_classy:
+    #     category_label_file = open(os.path.join(output_path, "category_label_file.txt"),mode='w')
     # Collect all image paths first
     for group in groups:
 
@@ -295,11 +308,14 @@ def process_via_dataset(base_path, output_path, train_ratio=0.7, val_ratio=0.15,
                 if is_classy:
                     category_name = CATEGORY_PARTS_RULE_HANDLER.get_category({CLASS_MAPPING[p] for p in parts})
                     if category_name:
-                        new_img_path = os.path.join(images_output,filename)
+                        new_img_path = os.path.join(images_output, filename)
                         cat_rule = CATEGORY_PARTS_RULE_HANDLER.get_cat_rule(CATEGORY_MAPP[category_name])
                         cat_parts = cat_rule.all_parts()
                         # parts_position = [(k,v) for k,v in parts_position if k in cat_parts]
                         new_img = assemble_car_from_parts_exact(img, parts_position, img_width, img_height, canvas_size=(img_width,img_height))
+                        # rr = yolo_clasify(new_img)
+                        # if not rr[0].boxes is None:
+                        #     print("cccc")
                         cv2.imwrite(new_img_path, new_img)
                         # cv2.imwrite("new_image_with_parts.jpg", new_img)
                         # cv2.imshow(f"{CATEGORY_MAPP[category_name]}", new_img)
@@ -313,7 +329,7 @@ def process_via_dataset(base_path, output_path, train_ratio=0.7, val_ratio=0.15,
                     with open(label_path, "w") as label_file:
                         label_file.write("\n".join(yolo_annotations))
                     category_name = CATEGORY_PARTS_RULE_HANDLER.get_category({CLASS_MAPPING[p] for p in parts})
-                    category_label_file.write(f"{filename} {category_name}")
+                    # category_label_file.write(f"{filename} {category_name}")
                 dataset_insights[split_name]['total'] += 1
                 total_images += 1
         for split, c in splits.items():
@@ -329,10 +345,9 @@ def process_via_dataset(base_path, output_path, train_ratio=0.7, val_ratio=0.15,
     print("===== image split ")
     for split, v in total_split.items():
         print(f"{split}: {v}")
-    if not is_classy:
-        create_data_yaml(output_path, is_no_direction)
+    create_data_yaml(output_path, is_no_direction, is_classy)
 
-        category_label_file.close()
+        # category_label_file.close()
 
 if __name__ == "__main__":
-    process_via_dataset(DATASET_PATH, cart_parts_region_dataset_path, is_no_direction=False,is_classy=True)
+    process_via_dataset(DATASET_PATH, cart_parts_region_dataset_path, is_no_direction=True, is_classy=None)

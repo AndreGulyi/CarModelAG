@@ -5,14 +5,14 @@ import xgboost as xgb
 from tensorflow.keras.models import load_model
 # from prepare_dataframe import process_via_dataset
 
-from config import MAJOR_PARTS_NO_DIRECTION
-from model.xgboost_model_utils import CarPartsDataset, prepare_features_and_labels
+from config import MAJOR_PARTS_NO_DIRECTION, CATEGORY_MAPP
+from xgboost_model_utils import CarPartsDataset, prepare_features_and_labels
 from positional_pattern_model import calculate_centroid, pad_sequence, pad_labels, pad_positions
 from tensorflow.keras.utils import to_categorical
 from keras.utils import custom_object_scope
 import tensorflow as tf
 from ultralytics import YOLO
-
+import logging
 image_shape = (640, 640)
 # Load the YOLO model
 yolo_model = YOLO("/Users/yarramsettinaresh/PycharmProjects/CarModel/yolo_model/carparts_poly3/weights/best.pt", )
@@ -25,7 +25,8 @@ bst_loaded = xgb.Booster()
 model_filename = 'model/car_parts_xgboost_model.json'
 
 bst_loaded.load_model(model_filename)
-print(model.summary())
+
+logging.debug(model.summary())
 
 def yolo_to_normalized_polygon(masks, image_shape):
   """
@@ -51,7 +52,7 @@ def yolo_to_normalized_polygon(masks, image_shape):
 
   # Print polygons
   # for polygon in polygons:
-  #     print(polygon)
+  #     logging.debug(polygon)
   original_height, original_width = image_shape[:2]
   mask_height, mask_width = mask.shape[:2]
 
@@ -99,12 +100,12 @@ def mask_to_polygons(mask):
         polygons.append(polygon)
     return polygons
 
-def predict(image=None):
-    if image is None:
+def predict(image_path=None, true_value=None, error_pdf_list=None, is_rccn=None):
+    if image_path is None:
         # Example input image for YOLO detection
         image = cv2.imread("/Users/yarramsettinaresh/PycharmProjects/CarModel/_car_parts_poly_region_dataset/images/train/0EETD2gUOZ_1648015344105.jpg")
     else:
-        image = cv2.imread(image)
+        image = cv2.imread(image_path)
     resized_image = cv2.resize(image, image_shape)
     # Run YOLO prediction
     yolo_results = yolo_model.predict(resized_image)
@@ -126,7 +127,7 @@ def predict(image=None):
     #
     masks_data = [mask for mask in masks_data]
 
-    if False:
+    if is_rccn:
         # masks = pad_sequence(masks_data, 20, image_shape[0], image_shape[1])
         positions = []
         for mask in masks_data:  # Iterate through NumPy masks
@@ -138,18 +139,17 @@ def predict(image=None):
         one_hot_labels = [np.eye(num_part_types)[label] for label in yolo_results[0].boxes.numpy().cls.astype(int)]
         one_hot_labels = pad_labels(one_hot_labels, max_parts, num_part_types)
         # Predict the category using the position-based classification model
-        masks = np.array([masks])
         positions = np.array([positions])
         one_hot_labels = np.array([one_hot_labels])
-        print(
+        logging.debug(
             f"Training mask Shape: {masks.shape}, Position Shape:{positions.shape}, Labels Shape: {one_hot_labels.shape}")
         predictions = model.predict([masks, positions, one_hot_labels])
 
         # Output the predicted category
         predicted_category = np.argmax(predictions, axis=-1)
-        print(f'Predicted category index: {predicted_category}')
+        logging.debug(f'Predicted category index: {predicted_category}')
         return predicted_category
-    if True:
+    else:
         # polygons = yolo_to_normalized_polygon( yolo_results[0],(640, 640))
         polygons = [yolo_to_normalized_polygon(mask, image_shape) for mask in masks_data]
         labels_list = yolo_results[0].boxes.numpy().cls.astype(int)
@@ -159,9 +159,27 @@ def predict(image=None):
         # bst_loaded.predict(X_train)
         dtest_loaded = xgb.DMatrix(X_train)  # Assuming X_test is the same input features for prediction
         y_pred_loaded = bst_loaded.predict(dtest_loaded)
-        # print(y_pred_loaded)
-        print(int(y_pred_loaded[0]))
+        # logging.debug(y_pred_loaded)
+        logging.debug(int(y_pred_loaded[0]))
+
+        #success: 972, fails:317, total:1289
+        if true_value and  not int(y_pred_loaded[0])+1  == true_value:
+            no_missing_trues_parts = []
+            no_missing_trues_parts = [MAJOR_PARTS_NO_DIRECTION[i] for i in labels_list ]
+            logging.debug(no_missing_trues_parts)
+            p_y = int(y_pred_loaded[0]) + 1
+            # logging.debug(yolo_results[0].save())
+            logging.debug(f" true:{CATEGORY_MAPP[true_value]} X pred: {CATEGORY_MAPP[p_y]}")
+            logging.debug("-----")
+            if not error_pdf_list is None:
+                file_path = f"log/temp/{image_path.split('/')[-1]}"
+                yolo_results[0].save(filename=file_path)
+                error_pdf_list.append({"filename": file_path, "labels": no_missing_trues_parts,
+                                 "category":f"{CATEGORY_MAPP[true_value]}(y_true)X(y_pred){CATEGORY_MAPP[p_y]}"})
+
+
         return int(y_pred_loaded[0])+1
+
 
 
 

@@ -5,7 +5,6 @@ import cv2
 from tensorflow.keras.utils import to_categorical
 from torch.utils.data import Dataset
 from config import MAJOR_PARTS_NO_DIRECTION, CATEGORY_MAPP, DATASET_PATH
-from prepare_dataframe import process_via_dataset
 from tensorflow.keras.mixed_precision import Policy, set_global_policy
 
 # Set mixed-precision policy
@@ -13,7 +12,7 @@ policy = Policy('mixed_float16')
 set_global_policy(policy)
 # Process dataset
 
-
+image_shape = (320, 320)
 # Pad sequence to a consistent size
 def pad_sequence(sequence, max_parts, height, width, pad_value=0):
     padding_length = max_parts - len(sequence)
@@ -65,7 +64,7 @@ def pad_labels(labels, max_parts, num_part_types, pad_value=0):
 
 # Dataset class
 class CarPartsDataset(Dataset):
-    def __init__(self, data, image_shape=(640, 640), max_parts=20):
+    def __init__(self, data, image_shape=image_shape, max_parts=20):
         self.data = data
         self.image_shape = image_shape
         self.num_part_types = len(MAJOR_PARTS_NO_DIRECTION)
@@ -122,14 +121,18 @@ def create_position_based_model(num_parts, height, width, num_part_types, num_ca
 
 
 # Dataset preparation
-data = process_via_dataset(DATASET_PATH, is_poly=True, is_no_direction=True)
 
 num_parts = 20
-height, width = 640, 640
+height, width = image_shape
 num_part_types = len(MAJOR_PARTS_NO_DIRECTION)
 num_categories = len(CATEGORY_MAPP)
 if __name__ == "__main__":
-    dataset = CarPartsDataset(data, image_shape=(640, 640))
+    v = 3
+    from prepare_dataframe import process_via_dataset
+
+    data = process_via_dataset(DATASET_PATH, is_poly=True, is_no_direction=True)
+
+    dataset = CarPartsDataset(data, image_shape=(height, width))
     train_masks, train_positions, train_labels, train_categories = zip(
         *[dataset[i] for i in range(len(dataset))]
     )
@@ -143,12 +146,38 @@ if __name__ == "__main__":
     model = create_position_based_model(num_parts, height, width, num_part_types, num_categories)
     model.summary()
     print(f"Training mask Shape: {train_masks.shape}, Position Shape:{train_positions.shape}, Labels Shape: {train_labels.shape}")
-    raise Exception("invalid ")
+    # raise Exception("invalid ")
     # Training
     model.fit(
         [train_masks, train_positions, train_labels],
         train_categories,
-        epochs=1,
+        epochs=3,
         batch_size=4
     )
-    model.save("model/car_parts_model.keras")
+    model.save(f"model/car_parts_model_v{v}.keras")
+
+    """
+    v: -1
+     Total params: 31,884,135 (121.63 MB)
+     Trainable params: 31,884,135 (121.63 MB)
+     Non-trainable params: 0 (0.00 B)
+    Training mask Shape: (1319, 20, 640, 640), Position Shape:(1319, 20, 2), Labels Shape: (1319, 20, 19)
+    330/330 ━━━━━━━━━━━━━━━━━━━━ 3000s 9s/step - accuracy: 0.6547 - loss: 1.1151
+    
+    
+    -----------------
+    v:0
+    Total params: 31,884,135 (121.63 MB)
+     Trainable params: 31,884,135 (121.63 MB)
+     Non-trainable params: 0 (0.00 B)
+    Training mask Shape: (1319, 20, 640, 640), Position Shape:(1319, 20, 2), Labels Shape: (1319, 20, 19)
+    Epoch 1/3
+    330/330 ━━━━━━━━━━━━━━━━━━━━ 2200s 7s/step - accuracy: 0.6002 - loss: 1.2484
+    Epoch 2/3
+    330/330 ━━━━━━━━━━━━━━━━━━━━ 1989s 6s/step - accuracy: 0.9099 - loss: 0.2950
+    Epoch 3/3
+    330/330 ━━━━━━━━━━━━━━━━━━━━ 2615s 8s/step - accuracy: 0.9666 - loss: 0.1529
+
+Process finished with exit code 130 (interrupted by signal 2: SIGINT)
+    
+    """

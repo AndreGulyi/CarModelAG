@@ -4,12 +4,15 @@ import pandas as pd
 import os
 
 from config import TEST_FOLDER, OUTPUT_CSV_PATH
+from multi_model_inference import MultiModelTflightInference
 
+model = MultiModelTflightInference
 
 def predict_folder(test_folder, output_path):
     """Run predictions on if images in test folder using the trained  model."""
     print(f"prediction started of {test_folder}")
-    model = CarModel()
+    model = MultiModelTflightInference()
+
     results = []
     for filename in os.listdir(test_folder):
         if filename.lower().endswith(('.jpg', '.jpeg', '.png')):

@@ -1,0 +1,26 @@
+# Testing : Your model will read images from a test folder and store the image name and its prediction in a pandas dataframe in OUTPUT_CSV_PATH file
+TEST_FOLDER: /Users/yarramsettinaresh/Downloads/exercise_1/6125c98e7eb77b4a469ef416
+OUTPUT_CSV_PATH: predictions.csv
+
+
+#car parts segment tflight model  Inference config
+CAR_PARTS_SEG_TF_LIGHT_MODEL_PATH: /Users/yarramsettinaresh/PycharmProjects/CarModel/yolo_model/carparts_poly3/weights/best_saved_model/best_float16.tflite #model/segmentation/car_parts_seg.tflite
+CAR_PARTS_SEG_MODEL_CONFIDENCE_THRESHOLD: 0.6
+CAR_PARTS_SEG_MODEL_IOU: 0.7
+
+# classification tflight model inference config
+CLASSIFY_MODE_PATH: model/car_parts_poly_crop_dataset.tflite
+CLASSIFY_MODEL_CONFIDENCE_THRESHOLD: 0.6
+
+
+#          *********    Model Training     ************
+DATASET_PATH: "/Users/yarramsettinaresh/Downloads/exercise_1/"  # Replace with  dataset path
+
+# CAR_PARTS_SEG_MODEL  config
+CAR_PARTS_SEG_MODEL_TRAINING_EPOCHS: 100  #
+CAR_PARTS_SEG_MODEL_BATCH: 16
+
+#  CLASSIFY_MODEL config
+CLASSIFY_MODEL_EPOCHS: 2
+CLASSIFY_MODEL_BATCH: 16
+
