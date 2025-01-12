@@ -1,19 +1,15 @@
 # Created by yarramsettinaresh GORAKA DIGITAL PRIVATE LIMITED at 23/12/24
-
-#         **********      1. TESTING          **********
 import datetime
-
 import yaml
 import os
-
 from __logger_init import new_version
-
+import logging
 
 def load_yaml_config(config_file):
     with open(config_file, 'r', ) as f:
         config = yaml.safe_load(f)
     return config
-import logging
+
 logging.basicConfig(
     filename=f"log/run/v_{new_version}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log",
     level=logging.DEBUG,
