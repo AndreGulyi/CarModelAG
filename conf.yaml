@@ -1,10 +1,10 @@
 # Testing : Your model will read images from a test folder and store the image name and its prediction in a pandas dataframe in OUTPUT_CSV_PATH file
-TEST_FOLDER: /Users/yarramsettinaresh/Downloads/exercise_1/6125c98e7eb77b4a469ef416
+TEST_FOLDER: /Users/yarramsettinaresh/Downloads/exercise_1
 OUTPUT_CSV_PATH: predictions.csv
 
 
 #car parts segment tflight model  Inference config
-CAR_PARTS_SEG_TF_LIGHT_MODEL_PATH: /Users/yarramsettinaresh/PycharmProjects/CarModel/yolo_model/carparts_poly3/weights/best_saved_model/best_float16.tflite #model/segmentation/car_parts_seg.tflite
+CAR_PARTS_SEG_TF_LIGHT_MODEL_PATH: /Users/yarramsettinaresh/PycharmProjects/CarModel/yolo_model/carparts_poly3/weights/best_saved_model/best_float16.tflite
 CAR_PARTS_SEG_MODEL_CONFIDENCE_THRESHOLD: 0.6
 CAR_PARTS_SEG_MODEL_IOU: 0.7
 

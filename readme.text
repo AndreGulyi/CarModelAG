@@ -1,7 +1,4 @@
-
-
-
-#############    Environment Setup    ##################
+#############  1.Environment Setup    ##################
 
     1.Create a Virtual Environment:
     python3 -m venv carEnv
@@ -13,7 +10,7 @@
     pip install ultralytics torch torchvision pandas pillow scikit-learn reportlab matplotlib tabulate
 
 
-######### Testing Instructions ########
+######### 2. Testing Instructions ########
 
     1. open conf.yaml file
     2. modify with actual paths:
@@ -22,12 +19,12 @@
     3. run test_predict.py with command "python test_predict.py"
     4. output will save in given filepath in 2.b) step
 
-#########  Training the model  #######
+#########  3. Training the model  #######
     1. open conf.yaml file
     2. modify with actual paths:
         a) DATASET_PATH
 
-    ##### Train CAR_PARTS_SEG_MODEL
+    ##### 3.1 Train CAR_PARTS_SEG_MODEL
 
     3. hypertuning paramanrer
         a) CAR_PARTS_SEG_MODEL_TRAINING_EPOCHS
@@ -39,7 +36,7 @@
     5*. copy tflight model path best_float16.tflite or best_float32.tflite
     6*. open conf.yaml file and modify with path CAR_PARTS_SEG_TF_LIGHT_MODEL_PATH
 
-    ###  Train CLASSIFY_MODE ######
+    ###  3.2 Train CLASSIFY_MODE ######
     7. open carparts_vs_category_graph_config.yaml review CATEGORY_RULES for how category is set in given dataset based on major parts
     8. in given dataset many images not been labeled properly i.e missed labeling major parts, so it not mapped to any category, those are consider a invalid data
     9. option steps: hypertuning paramanrer
@@ -53,7 +50,27 @@
     12. open conf.yaml file and modify with path CLASSIFY_MODE_PATH
 
 
-########   Eval dataset for overal F1 score  #######
-    1. It will take this DATASET_PATH from config.py
+######## 4. Eval dataset   #######
+    1. It will take this DATASET_PATH from conf.yaml
     2. run the eval_dataset.py with the command "python eval_dataset.py"
     3. review  the F1 score
+
+
+
+    ### Metrics insights  #####
+        Success: 1053, Failed: 266, Total: 1319
+
+        Metrics sorted by F1 Score:
+        Character      F1 Score    Precision    Recall
+        -----------  ----------  -----------  --------
+        front              0.94         0.90      1.00
+        rear               0.92         0.86      0.99
+        leftRear           0.65         0.70      0.60
+        rightRear          0.63         0.88      0.49
+        rightFront         0.47         0.72      0.35
+        leftFront          0.46         0.63      0.36
+
+        F1 Score: 0.79
+
+        Success: 1053, Failed: 266, Total testing: 1319
+        Accuracy: 79.83%

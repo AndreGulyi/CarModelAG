@@ -6,12 +6,8 @@ from config import cart_parts_region_dataset_path, is_poly, DATASET_PATH, CAR_PA
 from prepare_dataset import process_via_dataset
 
 
-def train_yolo_mode(output_dataset_path, is_poly=False):
-    # Load a pre-trained YOLO model (YOLOv8)
-    if is_poly:
-        model = YOLO("yolo11n-seg.pt")
-    else:
-        model = YOLO("yolov11n.pt")  # 'yolov8n.pt' is a smaller, faster variant
+def train_yolo_mode(output_dataset_path):
+    model = YOLO("yolo11n-seg.pt")
 
     # Train the model
     model.train(data=f'{output_dataset_path}/data.yaml', epochs=CAR_PARTS_SEG_MODEL_TRAINING_EPOCHS, imgsz=640,

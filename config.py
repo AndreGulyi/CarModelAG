@@ -25,12 +25,10 @@ conf= load_yaml_config('conf.yaml')
 
 CNN_IMG_SIZE = (256, 256)
 #    *****      Testing
-TEST_FOLDER = "/Users/yarramsettinaresh/Downloads/exercise_1/6125c98e7eb77b4a469ef416"  # model will read images from a test folder
-OUTPUT_CSV_PATH = "/carparts_vs_category_graph_config.yaml"  # store prediction in a pandas dataframe.
+TEST_FOLDER = conf["TEST_FOLDER"]  # model will read images from a test folder
+OUTPUT_CSV_PATH = conf["OUTPUT_CSV_PATH"] # store prediction in a pandas dataframe.
 
 #       *********       3. Evalute
-MODEL_PATH = "model/car_overlbestay_model.pth"
-
 
 CAR_PARTS_SEG_TF_LIGHT_MODEL_PATH = conf["CAR_PARTS_SEG_TF_LIGHT_MODEL_PATH"]
 CLASSIFY_MODE_PATH = conf["CLASSIFY_MODE_PATH"]
@@ -42,7 +40,7 @@ CAR_PARTS_SEG_MODEL_IOU = float(conf["CAR_PARTS_SEG_MODEL_IOU"])
 
 DATASET_PATH = conf["DATASET_PATH"]
 CAR_PARTS_SEG_MODEL_TRAINING_EPOCHS = int(conf["CAR_PARTS_SEG_MODEL_TRAINING_EPOCHS"])
-CAR_PARTS_SEG_MODEL_BATCH = float(conf["CAR_PARTS_SEG_MODEL_BATCH"])
+CAR_PARTS_SEG_MODEL_BATCH = int(conf["CAR_PARTS_SEG_MODEL_BATCH"])
 CLASSIFY_MODEL_EPOCHS = int(conf["CLASSIFY_MODEL_EPOCHS"])
 CLASSIFY_MODEL_BATCH = int(conf["CLASSIFY_MODEL_BATCH"])
 
