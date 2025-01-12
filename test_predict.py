@@ -1,5 +1,4 @@
 # Created by yarramsettinaresh GORAKA DIGITAL PRIVATE LIMITED at 23/12/24
-from carmodel import CarModel
 import pandas as pd
 import os
 
@@ -14,14 +13,18 @@ def predict_folder(test_folder, output_path):
     model = MultiModelTflightInference()
 
     results = []
-    for filename in os.listdir(test_folder):
-        if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
-            image_path = os.path.join(test_folder, filename)
-            try:
-                predicted_classes = model.predict(image_path)  # Assuming model.predict() accepts PIL Image
-                results.append((filename, predicted_classes))
-            except Exception as e:
-                print(f"Error processing {image_path}: {e}")
+    for folder_name in os.listdir(test_folder):
+        folder_path = os.path.join(test_folder, folder_name)
+        if not os.path.isdir(folder_path):
+            continue
+        for filename in os.listdir(folder_path):
+            if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+                image_path = os.path.join(folder_path, filename)
+                try:
+                    predicted_classes = model.predict(image_path)  # Assuming model.predict() accepts PIL Image
+                    results.append((filename, predicted_classes))
+                except Exception as e:
+                    print(f"Error processing {image_path}: {e}")
 
     df = pd.DataFrame(results, columns=['filename', 'predictions'])
     df.to_csv(output_path, index=False)

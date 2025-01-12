@@ -22,7 +22,7 @@ class MultiModelTflightInference:
 
     def predict(self, image_path):
         parts_image, part_ids = self._pred_carts_seg_model(image_path)
-        if len(part_ids) <= 3:
+        if part_ids is None or len(part_ids) <= 4:
             return None
         return self._pred_classy_mode(parts_image)
 
