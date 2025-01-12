@@ -7,7 +7,7 @@
     source carEnv/bin/activate
 
     3.Install Dependencies:
-    pip install ultralytics torch torchvision pandas pillow scikit-learn reportlab matplotlib tabulate
+    pip install ultralytics torch torchvision pandas pillow scikit-learn reportlab matplotlib tabulate tensorflow
 
 
 ######### 2. Testing Instructions ########
