@@ -32,7 +32,7 @@ def main():
                 y_true.append(true_category)
                 y_pred.append(predicted_category)
                 if predicted_category != true_category:
-                    print(f"Mismatch: Predicted: {predicted_category}, Actual: {true_category}")
+                    print(f"Mismatch: Predicted: {predicted_category}, True: {true_category}")
                     failed_count += 1
             else:
                 y_true.append(true_category)

@@ -14,9 +14,11 @@ def predict_folder(test_folder, output_path):
 
     results = []
     for folder_name in os.listdir(test_folder):
+
         folder_path = os.path.join(test_folder, folder_name)
         if not os.path.isdir(folder_path):
             continue
+        print(folder_name)
         for filename in os.listdir(folder_path):
             if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
                 image_path = os.path.join(folder_path, filename)
