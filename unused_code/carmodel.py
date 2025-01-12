@@ -8,8 +8,6 @@ from torchvision import transforms
 import logging
 from PIL import Image
 
-from config import MODEL_PATH
-
 logging.basicConfig(filename=f"log/{datetime.datetime.now()}.log")
 logging.basicConfig(
     filename=f"log/eval/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log",
